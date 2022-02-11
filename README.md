@@ -1,7 +1,6 @@
 # PoParser
 
 [![Build Status](https://travis-ci.org/imcrazytwkr/po_parser.svg?branch=master)](https://travis-ci.org/imcrazytwkr/po_parser)
-[![Dependencies](https://shards.rocks/badge/github/imcrazytwkr/po_parser/status.svg)](https://shards.rocks/github/imcrazytwkr/po_parser)
 [![License](https://img.shields.io/github/license/imcrazytwkr/po_parser.svg)](https://github.com/imcrazytwkr/po_parser/blob/master/LICENSE)
 
 A Crystal Po parser based on [Simple Po Parser](https://github.com/experteer/simple_po_parser)
