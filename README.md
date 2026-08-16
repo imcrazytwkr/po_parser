@@ -14,7 +14,7 @@ Add this to your application's `shard.yml`:
 
 ```yaml
 dependencies:
-  simple_po_parser:
+  po_parser:
     github: imcrazytwkr/po_parser
 ```
 
