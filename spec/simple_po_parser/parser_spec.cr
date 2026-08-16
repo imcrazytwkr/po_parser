@@ -99,6 +99,38 @@ describe PoParser::Parser do
     result.message_plural[2].should eq("msgstr 2")
   end
 
+  it "parses an obsolete entry" do
+    message = "#~ msgid \"hi\"\n#~ msgstr \"there\""
+    result = PoParser::Parser.new(message).parse
+
+    result.obsolete?.should be_true
+    result.obsolete.should eq("msgid \"hi\"msgstr \"there\"")
+  end
+
+  it "parses escaped quotes in message text" do
+    message = %(msgid "say \\"hi\\""\nmsgstr "ok")
+    result = PoParser::Parser.new(message).parse
+
+    result.message_id.should eq(%(say \\"hi\\"))
+    result.message.should eq("ok")
+  end
+
+  it "allows tabs between keywords and quoted text" do
+    message = "msgid\t\"id\"\nmsgstr\t\"tr\""
+    result = PoParser::Parser.new(message).parse
+
+    result.message_id.should eq("id")
+    result.message.should eq("tr")
+  end
+
+  it "returns the cached message on a second parse" do
+    parser = PoParser::Parser.new(PO_SIMPLE_MESSAGE)
+    first = parser.parse
+    second = parser.parse
+
+    second.should be(first)
+  end
+
   context "Errors" do
     it "cascade to ParseError" do
       expect_raises(PoParser::ParserError) do
@@ -133,6 +165,30 @@ describe PoParser::Parser do
       err = /Received text for message #1 before text for message #0/
       message = "# comment\nmsgid \"id\"\nmsgid_plural \"msg plural\"\nmsgstr[1] \"plural "
       message += "trans\""
+      expect_raises(PoParser::ParserError, err) do
+        PoParser::Parser.new(message).parse
+      end
+    end
+
+    it "are raised if there is unexpected content after a singular msgstr" do
+      err = /Unexpected content after expected message end/
+      message = "msgid \"id\"\nmsgstr \"tr\"\nmsgid \"again\""
+      expect_raises(PoParser::ParserError, err) do
+        PoParser::Parser.new(message).parse
+      end
+    end
+
+    it "are raised if there is unexpected content after plural msgstr entries" do
+      err = /End of message was expected/
+      message = "msgid \"id\"\nmsgid_plural \"ids\"\nmsgstr[0] \"a\"\nfoo"
+      expect_raises(PoParser::ParserError, err) do
+        PoParser::Parser.new(message).parse
+      end
+    end
+
+    it "are raised if msgstr plural indexes are duplicated" do
+      err = /Bad 'msgstr\[index\]' index/
+      message = "msgid \"id\"\nmsgid_plural \"ids\"\nmsgstr[0] \"a\"\nmsgstr[0] \"b\""
       expect_raises(PoParser::ParserError, err) do
         PoParser::Parser.new(message).parse
       end
@@ -178,6 +234,12 @@ describe PoParser::Parser do
         end
 
         message = "# comment\n#| msgctxt \"hi\"\n#~msgid \"hi\"\n#~msgstr \"should be "
+        message += "obsolete\""
+        expect_raises(PoParser::ParserError, err) do
+          PoParser::Parser.new(message).parse
+        end
+
+        message = "# comment\n#| msgid_plural \"his\"\n#~msgid \"hi\"\n#~msgstr \"should be "
         message += "obsolete\""
         expect_raises(PoParser::ParserError, err) do
           PoParser::Parser.new(message).parse
