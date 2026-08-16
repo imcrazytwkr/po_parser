@@ -1,24 +1,58 @@
 require "string_scanner"
 
 module PoParser
-  # Extending native StringScanner to add some methods that were not implemented in Crystal
-  # for some reason
+  # Polyfill for 1.21 `StringScanner` methods missing on older Crystal versions
   class Scanner < StringScanner
-    # Returns true if the scan pointer is at the beginning of the line.
-    def bol?
-      offset == 0 || @str[offset - 1] == '\n'
+    def beginning_of_line? : Bool
+      return false if eos?
+
+      offset == 0 || string[offset - 1] == '\n'
     end
 
-    # Scans one character and returns it. This method is multibyte character sensitive.
-    def get_char
+    def current_char? : Char?
       return nil if eos?
 
-      position = offset
-      char = @str[position]
-      # Instead of calling `self.offset=`, variable assignment takes place; have to use self
-      # explicilty to overcome it
-      self.offset = position + 1
-      char
+      string[offset]
+    end
+
+    def current_char : Char
+      current_char? || raise IndexError.new
+    end
+
+    def rewind(len : Int) : Nil
+      new_offset = offset - len
+      raise IndexError.new("Index out of range") if new_offset < 0
+
+      self.offset = new_offset
+    end
+
+    def scan(len : Int) : String?
+      return "" if len == 0
+
+      remaining = string.size - offset
+      return nil if remaining < len
+
+      start = offset
+      self.offset = start + len
+      string[start, len]
+    end
+
+    def skip(len : Int) : Int32?
+      scan(len).try(&.size)
+    end
+
+    def scan(pattern : Char) : String?
+      return nil unless current_char? == pattern
+
+      scan(1)
+    end
+
+    def check(pattern : Char) : String?
+      current_char? == pattern ? pattern.to_s : nil
+    end
+
+    def skip(pattern : Char) : Int32?
+      scan(pattern).try(&.size)
     end
   end
 end

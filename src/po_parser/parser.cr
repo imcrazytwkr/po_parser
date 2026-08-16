@@ -11,10 +11,10 @@ module PoParser
   #   enabled.
   class Parser
     @scanner : Scanner
-    private getter :scanner
+    private getter scanner
 
     @result : Message
-    private getter :result
+    private getter result
 
     # Single message parser class.
     #
@@ -27,22 +27,20 @@ module PoParser
 
     # Parses the message of the PO format.
     #
-    # @return [Hash(Symbol, String|Hash(UInt32, String))] PO message parsed into Hash format
+    # @return [Message]
     def parse
       # Returning cached response to avoid parsing the same message multiple times
       return result unless result.empty?
       lines
       result
     rescue err : ParserError
-      message  = "SimplePoParser::ParserError #{err.message.to_s.strip}\n"
+      message = "SimplePoParser::ParserError #{err.message.to_s.strip}\n"
       message += "Parsing result before error: '#{result.to_s}'\n"
       message += "SimplePoParser backtrace: SimplePoParser::ParserError"
       raise ParserError.new(message, err)
     end
 
-    #########################################
-    ###            branching              ###
-    #########################################
+    # --- branching ---
 
     # Arbitary line of a PO message. Can be either a comment or a message.
     # Message parsing is always started with checking for msgctxt as content is expected in
@@ -57,43 +55,47 @@ module PoParser
     # Match a comment line. Called on lines starting with '#'.
     # Recalls line when the comment line was parsed.
     private def comment
-      case scanner.get_char
-      when ' '
-        skip_whitespace
-        result.translator_comment = comment_text
-        lines
-      when '.'
-        skip_whitespace
-        result.extracted_comment = comment_text
-        lines
-      when ':'
-        skip_whitespace
-        result.reference = comment_text
-        lines
-      when ','
-        skip_whitespace
-        result.flag = comment_text
-        lines
-      when '|'
-        skip_whitespace
-        previous_comments
-        lines
-      when '\n'
-        skip_whitespace
-        # Empty comment line
-        lines
+      case char = scanner.current_char?
+      when ' ', '.', ':', ',', '|', '\n'
+        scanner.scan(1)
+        case char
+        when ' '
+          skip_whitespace
+          result.translator_comment = comment_text
+          lines
+        when '.'
+          skip_whitespace
+          result.extracted_comment = comment_text
+          lines
+        when ':'
+          skip_whitespace
+          result.reference = comment_text
+          lines
+        when ','
+          skip_whitespace
+          result.flag = comment_text
+          lines
+        when '|'
+          skip_whitespace
+          previous_comments
+          lines
+        when '\n'
+          skip_whitespace
+          # Empty comment line
+          lines
+        end
       when '~'
         previous = result_has_previous?
         if previous
-          message  = "Previous comment entries need to be marked obsolete too in obsolete "
+          message = "Previous comment entries need to be marked obsolete too in obsolete "
           message += "message entries. But already got #{previous}"
           raise PoSyntaxError.new(message)
         end
 
-        scanner.offset = scanner.offset - 2
+        scanner.rewind(1)
         result.obsolete = obsoletes
       else
-        scanner.offset = scanner.offset - 2
+        scanner.rewind(1)
         raise PoSyntaxError.new("Unknown comment type #{scanner.peek(10).inspect}")
       end
     rescue err : PoSyntaxError
@@ -127,7 +129,7 @@ module PoParser
         return msgid_plural? ? msgstr_plural : msgstr
       end
 
-      message  = "Message without msgid is not allowed. "
+      message = "Message without msgid is not allowed. "
       message += "The Line started unexpectedly with #{scanner.peek(10).inspect}."
       raise PoSyntaxError.new(message)
     rescue err : PoSyntaxError
@@ -161,14 +163,14 @@ module PoParser
 
         skip_whitespace
         unless scanner.eos?
-          message  = "Unexpected content after expected message end "
+          message = "Unexpected content after expected message end "
           message += scanner.peek(10).inspect
           raise PoSyntaxError.new(message)
         end
 
         return nil
       else
-        message  = "Singular message without msgstr is not allowed. Line started "
+        message = "Singular message without msgstr is not allowed. Line started "
         message += "unexpectedly with ##{scanner.peek(10).inspect}"
         raise PoSyntaxError.new(message)
       end
@@ -192,7 +194,7 @@ module PoParser
         unless msgstr_num == msg_length
           if msgstr_num > msg_length
             # msgstr plurals must come in 0-based index in strict order
-            message  = "Received text for message \##{msgstr_num} before text for message \#"
+            message = "Received text for message \##{msgstr_num} before text for message \#"
             message += msg_length.to_s
             raise MessageIndexError.new(message)
           end
@@ -205,12 +207,12 @@ module PoParser
         result.message_plural << (text.empty? ? message_multiline : text)
         msgstr_plural
       elsif msg_length == 0 # and no `msgstr_key` was found
-        message  = "Plural message without msgstr[0] is not allowed. Line started "
+        message = "Plural message without msgstr[0] is not allowed. Line started "
         message += "unexpectedly with #{scanner.peek(10).inspect}"
         raise PoSyntaxError.new(message)
       elsif !scanner.eos?
-        message  = "End of message was expected, but line started unexpectedly with "
-        scanner.offset = scanner.offset - 10
+        message = "End of message was expected, but line started unexpectedly with "
+        scanner.rewind(Math.min(10, scanner.offset))
         message += scanner.peek(20).inspect
         raise PoSyntaxError.new(message)
       end
@@ -229,20 +231,20 @@ module PoParser
     private def previous_comments
       unless scanner.scan(/msg/)
         # Тext part must be msgctxt, msgid or msgid_plural
-        message  = "Previous comments must start with '#| msg'; "
+        message = "Previous comments must start with '#| msg'; "
         message += "#{scanner.peek(10).inspect} unknown"
         raise PoSyntaxError.new(message)
       end
 
       key = case
-      when scanner.scan(/id/)
-        scanner.scan(/_plural/) ? :previous_msgid_plural : :previous_msgid
-      when scanner.scan(/ctxt/)
-        :previous_msgctxt
-      else
-        message = "Previous comment type #{("msg" + scanner.peek(10)).inspect} unknown."
-        raise PoSyntaxError.new(message)
-      end
+            when scanner.scan(/id/)
+              scanner.scan(/_plural/) ? :previous_msgid_plural : :previous_msgid
+            when scanner.scan(/ctxt/)
+              :previous_msgctxt
+            else
+              message = "Previous comment type #{("msg" + scanner.peek(10)).inspect} unknown."
+              raise PoSyntaxError.new(message)
+            end
 
       skip_whitespace
       text = message_line
@@ -266,7 +268,7 @@ module PoParser
       # the double quote to ensure it hits a previous multiline and not another line type.
       if scanner.scan(/#\|[ \t]*"/)
         # Go one character back, so we can reuse the "message line" method
-        scanner.offset = scanner.offset - 1
+        scanner.rewind(1)
         # Go on until we no longer hit a multiline line
         return previous_multiline(contents += message_line)
       end
@@ -282,7 +284,7 @@ module PoParser
     # starting with the double quote character
     private def message_multiline(message = "")
       skip_whitespace
-      scanner.check(/"/) ? message_multiline(message += message_line) : message
+      scanner.check('"') ? message_multiline(message += message_line) : message
     rescue err : PoSyntaxError
       raise PoSyntaxError.new("Syntax error in message_multiline\n#{err.message}", err)
     end
@@ -291,23 +293,22 @@ module PoParser
     #
     # @return [String] message_text
     private def message_line
-      unless scanner.get_char == '"'
-        scanner.offset = scanner.offset - 1
-        message  = "A message text needs to start with the double quote character '\"', "
+      unless scanner.scan('"')
+        message = "A message text needs to start with the double quote character '\"', "
         message += "but this was found: #{scanner.peek(10).inspect}"
         raise PoSyntaxError.new(message)
       end
 
       text = message_text
-      unless scanner.get_char == '"'
-        message  = "The message text '#{text}' must be finished with the double quote "
+      unless scanner.scan('"')
+        message = "The message text '#{text}' must be finished with the double quote "
         message += "character '\"'"
         raise PoSyntaxError.new(message)
       end
 
       skip_whitespace
       unless end_of_line
-        message  = "There should be only whitespace until the end of line "
+        message = "There should be only whitespace until the end of line "
         message += "after the double quote character of a message text. #{scanner.peek(10)}"
         raise PoSyntaxError.new(message)
       end
@@ -328,14 +329,12 @@ module PoParser
 
       return contents if scanner.eos?
 
-      message  = "All lines must be obsolete after the first obsolete line, but got: "
+      message = "All lines must be obsolete after the first obsolete line, but got: "
       message += scanner.peek(10).inspect
       raise PoSyntaxError.new(message)
     end
 
-    #########################################
-    ###             scanning              ###
-    #########################################
+    # --- scanning ---
 
     # Returns the text of a comment
     #
@@ -369,17 +368,17 @@ module PoParser
     #
     # @return [Boolean] true if scanner at beginning of line or eos
     private def end_of_line
-      scanner.scan(/\n/)
-      scanner.eos? || scanner.bol?
+      scanner.scan('\n')
+      scanner.eos? || scanner.beginning_of_line?
     end
 
     # Checks whether key(s) had already been set
     private def result_has_previous?
       case result
-        when .previous_message_context? then "previous message context"
-        when .previous_message_id_plural? then "previous message id plural"
-        when .previous_message_id? then "previous message id"
-        else false
+      when .previous_message_context?   then "previous message context"
+      when .previous_message_id_plural? then "previous message id plural"
+      when .previous_message_id?        then "previous message id"
+      else                                   false
       end
     end
   end
