@@ -19,7 +19,7 @@ describe PoParser::Parser do
     result.message?.should be_true
     result.message.should eq({
       "Project-Id-Version: simple_po_parser 1\\n",
-      "Report-Msgid-Bugs-To: me\\n"
+      "Report-Msgid-Bugs-To: me\\n",
     }.join)
   end
 
@@ -75,7 +75,7 @@ describe PoParser::Parser do
     result.previous_message_id?.should be_true
     result.previous_message_id.should eq({
       "multiline\\n",
-      "previous messageid"
+      "previous messageid",
     }.join)
 
     result.previous_message_id_plural?.should be_true
@@ -94,7 +94,7 @@ describe PoParser::Parser do
     result.message_plural[0].should eq("msgstr 0")
     result.message_plural[1].should eq({
       "msgstr 1 multiline 1\\n",
-      "msgstr 1 line 2\\n"
+      "msgstr 1 line 2\\n",
     }.join)
     result.message_plural[2].should eq("msgstr 2")
   end
@@ -131,7 +131,7 @@ describe PoParser::Parser do
 
       # MessageIndex Error proxying
       err = /Received text for message #1 before text for message #0/
-      message =  "# comment\nmsgid \"id\"\nmsgid_plural \"msg plural\"\nmsgstr[1] \"plural "
+      message = "# comment\nmsgid \"id\"\nmsgid_plural \"msg plural\"\nmsgstr[1] \"plural "
       message += "trans\""
       expect_raises(PoParser::ParserError, err) do
         PoParser::Parser.new(message).parse
@@ -171,13 +171,13 @@ describe PoParser::Parser do
 
       it "are raised if previous comments are not marked as obsolete in obsolete entries" do
         err = /Previous comment entries need to be marked obsolete too in obsolete message/
-        message  = "# comment\n#| msgid \"hi\"\n#~msgid \"hi\"\n#~msgstr \"should be "
+        message = "# comment\n#| msgid \"hi\"\n#~msgid \"hi\"\n#~msgstr \"should be "
         message += "obsolete\""
         expect_raises(PoParser::ParserError, err) do
           PoParser::Parser.new(message).parse
         end
 
-        message  = "# comment\n#| msgctxt \"hi\"\n#~msgid \"hi\"\n#~msgstr \"should be "
+        message = "# comment\n#| msgctxt \"hi\"\n#~msgid \"hi\"\n#~msgstr \"should be "
         message += "obsolete\""
         expect_raises(PoParser::ParserError, err) do
           PoParser::Parser.new(message).parse

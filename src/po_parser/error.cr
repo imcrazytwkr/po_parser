@@ -1,12 +1,12 @@
 module PoParser
-	class ParserError < Exception
-	end
+  class ParserError < Exception
+  end
 
-	class PoSyntaxError < ParserError
-		def initialize(message : String = "Invalid Po syntax", cause : Exception? = nil)
-			super message, cause
-		end
-	end
+  class PoSyntaxError < ParserError
+    def initialize(message : String = "Invalid Po syntax", cause : Exception? = nil)
+      super message, cause
+    end
+  end
 
   class FileNotExistsError < ParserError
     def initialize(file_name : String)
@@ -14,6 +14,6 @@ module PoParser
     end
   end
 
-	class MessageIndexError < ParserError
-	end
+  class MessageIndexError < ParserError
+  end
 end

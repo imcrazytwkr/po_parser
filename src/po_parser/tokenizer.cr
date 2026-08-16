@@ -2,10 +2,10 @@ module PoParser
   # Split a PO file into single PO message entities (a message is seperated by two newline)
   class Tokenizer
     @messages = [] of Message
-    getter :messages
+    getter messages
 
     @file_path : String
-    getter :file_path
+    getter file_path
 
     def initialize(path : String)
       raise FileNotExistsError.new(path) unless File.file? path
