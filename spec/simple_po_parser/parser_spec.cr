@@ -48,6 +48,33 @@ describe PoParser::Parser do
     result.message.should eq("translated")
   end
 
+  it "parses the multiline entry as expected" do
+    result = PoParser::Parser.new(PO_MULTILINE_MESSAGE).parse
+
+    result.should be_a(PoParser::Message)
+
+    result.previous_message_id?.should be_true
+    result.previous_message_id.should eq({
+      "multiline\\n",
+      "previous messageid",
+      "with non-empty first line",
+    }.join)
+
+    result.message_id?.should be_true
+    result.message_id.should eq({
+      "multiline string ",
+      "with empty first line ",
+      "and trailing spaces",
+    }.join)
+
+    result.message?.should be_true
+    result.message.should eq({
+      "multiline string",
+      "with non-empty first line",
+      "and no trailing spaces",
+    }.join)
+  end
+
   it "parses the complex entry as expected" do
     result = PoParser::Parser.new(PO_COMPLEX_MESSAGE).parse
 

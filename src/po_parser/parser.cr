@@ -108,8 +108,7 @@ module PoParser
     private def msgctxt
       if scanner.scan(/msgctxt/)
         skip_whitespace
-        text = message_line
-        result.message_context = text.empty? ? message_multiline : text
+        result.message_context = message_multiline(message_line)
       end
 
       msgid
@@ -124,8 +123,7 @@ module PoParser
     private def msgid
       if scanner.scan(/msgid/)
         skip_whitespace
-        text = message_line
-        result.message_id = text.empty? ? message_multiline : text
+        result.message_id = message_multiline(message_line)
         return msgid_plural? ? msgstr_plural : msgstr
       end
 
@@ -145,8 +143,7 @@ module PoParser
       return false unless scanner.scan(/msgid_plural/)
 
       skip_whitespace
-      text = message_line
-      result.message_id_plural = text.empty? ? message_multiline : text
+      result.message_id_plural = message_multiline(message_line)
       true
     rescue err : PoSyntaxError
       raise PoSyntaxError.new("Syntax error in msgid\n#{err.message}", err)
@@ -158,8 +155,7 @@ module PoParser
     private def msgstr
       if scanner.scan(/msgstr/)
         skip_whitespace
-        text = message_line
-        result.message = text.empty? ? message_multiline : text
+        result.message = message_multiline(message_line)
 
         skip_whitespace
         unless scanner.eos?
@@ -203,8 +199,7 @@ module PoParser
         end
 
         skip_whitespace
-        text = message_line
-        result.message_plural << (text.empty? ? message_multiline : text)
+        result.message_plural << message_multiline(message_line)
         msgstr_plural
       elsif msg_length == 0 # and no `msgstr_key` was found
         message = "Plural message without msgstr[0] is not allowed. Line started "
@@ -247,8 +242,7 @@ module PoParser
             end
 
       skip_whitespace
-      text = message_line
-      text = previous_multiline if text.empty?
+      text = previous_multiline(message_line)
 
       case key
       when :previous_msgid
@@ -280,8 +274,7 @@ module PoParser
 
     # parses a multiline message
     #
-    # multiline messages are indicated by an empty content as first line and the next line
-    # starting with the double quote character
+    # Further quoted lines may follow even when the first line has content.
     private def message_multiline(message = "")
       skip_whitespace
       scanner.check('"') ? message_multiline(message += message_line) : message
