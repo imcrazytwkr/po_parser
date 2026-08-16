@@ -1,0 +1,20 @@
+# Folder view configuration files
+.DS_Store
+Desktop.ini
+
+# Thumbnail cache files
+._*
+Thumbs.db
+
+# Files that might appear on external disks
+.Spotlight-V100
+.Trashes
+
+# Crystal-specific directories
+/docs
+/lib
+/bin
+/.shards
+
+# Libraries don't need dependency lock, dependencies will be locked in apps that use them
+/shard.lock

@@ -1,0 +1,9 @@
+name: po_parser
+version: 0.1.0
+
+authors:
+  - Denis Chernov
+
+crystal: 0.24.2
+
+license: BSD-3-Clause
