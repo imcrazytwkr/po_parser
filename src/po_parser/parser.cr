@@ -347,7 +347,7 @@ module PoParser
       raise PoSyntaxError.new("Comment text should advance to next line or stop at eos")
       text
     rescue err : PoSyntaxError
-      raise PoSyntaxError.new("Syntax error in commtent_text\n${err.message}", err)
+      raise PoSyntaxError.new("Syntax error in comment_text\n#{err.message}", err)
     end
 
     # Returns the text of a message line
