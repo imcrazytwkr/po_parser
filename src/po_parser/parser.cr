@@ -21,7 +21,7 @@ module PoParser
     # @param message [String] a single PO message in String format without leading or trailing
     #                         whitespace
     def initialize(message : String)
-      @scanner = Scanner.new message.strip
+      @scanner = Scanner.new(message.delete('\r').strip)
       @result = Message.new
     end
 
