@@ -361,7 +361,7 @@ module PoParser
     # Advances the scanner until the next non whitespace position
     # Does not match newlines
     private def skip_whitespace
-      scanner.skip(/\s+/)
+      scanner.skip(/[ \t]+/)
     end
 
     # returns true if the scanner is at beginning of next line or end of string
